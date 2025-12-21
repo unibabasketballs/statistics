@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Uniba Basketball Statistics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap');
+        :root { --brand-primary: #064e3b; --brand-accent: #10b981; --bg-main: #fcfdfe; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-main); color: #1e293b; -webkit-print-color-adjust: exact; }
+        .premium-card { background: white; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03); border-radius: 1rem; }
+        .data-table thead th { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #64748b; padding: 10px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+        .data-table tbody td { padding: 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; }
+        .player-row-active { background-color: #f0fdf4 !important; border-left: 4px solid var(--brand-accent); }
+        
+        /* FIX: Menghapus low opacity pada pemain cadangan agar semua 100% */
+        .on-bench { opacity: 1 !important; background-color: #ffffff; } 
+        
+        .rating-pill { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+        .kbd-key { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; box-shadow: 0 1px 0 #cbd5e1; }
+        #toast { visibility: hidden; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 50px; font-size: 11px; font-weight: 700; z-index: 1000; }
+        #toast.show { visibility: visible; animation: fadeInUp 0.3s; }
+        #roster-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        
+        /* LOGIN STYLES */
+        #login-overlay { position: fixed; inset: 0; background: #064e3b; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 2rem; border-radius: 1.5rem; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+
+        /* PRINT STYLES - OPTIMIZED FOR A4 PORTRAIT */
+        @media print { 
+            @page { size: A4 portrait; margin: 1cm; }
+            .no-print { display: none !important; } 
+            #login-overlay { display: none !important; }
+            .premium-card { border: none; box-shadow: none; border-radius: 0; padding: 0 !important; }
+            body { background: white; padding: 0; }
+            .print-header { display: block !important; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
+            .print-footer { display: block !important; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
+            .data-table { width: 100% !important; border: 1px solid #eee; table-layout: fixed; }
+            .data-table thead th { font-size: 7px !important; padding: 4px 2px !important; }
+            .data-table tbody td { font-size: 9px !important; padding: 4px 2px !important; opacity: 1 !important; }
+            .rating-pill { font-size: 8px !important; padding: 1px 3px !important; }
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    </style>
+</head>
+<body class="p-4 pb-12">
+
+<div id="login-overlay" class="no-print">
+    <div class="login-box">
+        <img src="image/71.png" class="w-16 h-16 mx-auto mb-4 object-contain">
+        <h2 class="text-lg font-black uppercase tracking-tighter">Uniba Basketball</h2>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mb-6 italic">Secure Access Only</p>
+        <input type="password" id="pass-field" class="w-full border-2 border-slate-100 rounded-xl px-4 py-3 mb-3 focus:border-emerald-500 outline-none text-center font-bold text-sm" placeholder="Password">
+        <button onclick="handleLogin()" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all">Unlock Dashboard</button>
+        <p id="error-msg" class="text-red-500 text-[9px] font-bold mt-3 uppercase hidden">Password Salah!</p>
+    </div>
+</div>
+
+<div class="hidden print-header w-full">
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-4">
+            <img src="image/71.png" class="w-16 h-16 object-contain">
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter">Uniba Basketball</h1>
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Official Match Statistics Report</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p id="print-date" class="text-[10px] font-bold uppercase text-slate-400"></p>
+            <p id="print-period-info" class="text-[10px] font-bold text-emerald-600 uppercase"></p>
+        </div>
+    </div>
+    <div class="grid grid-cols-3 py-4 border-y border-slate-200 items-center">
+        <div class="text-left"><p class="text-[10px] font-bold text-slate-400 uppercase">Home Team</p><p id="ph-name" class="text-lg font-black"></p></div>
+        <div class="text-center font-black text-3xl" id="p-score-total">0 - 0</div>
+        <div class="text-right"><p class="text-[10px] font-bold text-slate-400 uppercase">Away Team</p><p id="pa-name" class="text-lg font-black"></p></div>
+    </div>
+</div>
+
+<div id="roster-modal" class="no-print">
+    <div class="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-black tracking-tighter uppercase">Roster Management</h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <textarea id="bulk-input" rows="10" class="w-full border rounded-xl p-3 font-mono text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="07 Ahmad Dhani"></textarea>
+        <div class="flex gap-2 mt-4">
+            <button onclick="saveBulkRoster()" class="flex-1 bg-emerald-600 text-white font-black py-3 rounded-xl uppercase text-xs">Save</button>
+            <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 font-black py-3 rounded-xl uppercase text-xs">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="uppercase">Stat Updated</div>
+
+<div class="max-w-[1300px] mx-auto space-y-4">
+    <div class="premium-card p-6 flex flex-wrap justify-between items-center gap-6 no-print">
+        <div class="flex items-center gap-5">
+            <img src="image/71.png" class="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden object-contain p-1">
+            <div>
+                <h1 class="text-xl font-black text-slate-900 leading-none tracking-tighter uppercase">Uniba<span class="text-emerald-600"> Basketball</span></h1>
+                <div class="flex items-center gap-2 mt-2">
+                    <span id="period-display" class="text-[9px] font-extrabold bg-slate-900 text-white px-2 py-0.5 rounded uppercase">Q1</span>
+                    <button onclick="sessionStorage.clear(); location.reload();" class="text-[8px] font-bold text-slate-400 hover:text-red-500 uppercase ml-2 underline">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-8">
+            <div class="text-center w-32">
+                <button onclick="changeTeamNamePrompt('home')" id="btn-home" class="w-full truncate px-3 py-1.5 rounded-full font-black text-[10px] uppercase mb-1 transition-all">HOME</button>
+                <p id="score-home" class="text-5xl font-black text-slate-900">0</p>
+            </div>
+            <div class="text-center">
+                <div id="game-clock" onclick="manualClockEdit()" class="text-6xl font-mono font-bold text-slate-800 tracking-tighter cursor-pointer hover:text-emerald-600 transition-colors">10:00</div>
+                <button onclick="toggleClock()" id="clock-btn" class="mt-2 bg-emerald-600 text-white text-[9px] font-black px-6 py-1.5 rounded-full uppercase shadow-lg hover:scale-105 active:scale-95 transition-all">Start</button>
+            </div>
+            <div class="text-center w-32">
+                <button onclick="changeTeamNamePrompt('away')" id="btn-away" class="w-full truncate px-3 py-1.5 rounded-full font-black text-[10px] uppercase mb-1 transition-all">AWAY</button>
+                <p id="score-away" class="text-5xl font-black text-slate-900">0</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-1 border-l pl-6">
+            <p class="text-[8px] font-black text-slate-400 text-center uppercase mb-1 tracking-widest">Period</p>
+            <div class="flex gap-1">
+                <button onclick="setPeriod('Q1')" class="per-btn w-7 h-7 rounded border text-[10px] font-bold bg-slate-900 text-white">1</button>
+                <button onclick="setPeriod('Q2')" class="per-btn w-7 h-7 rounded border text-[10px] font-bold bg-white">2</button>
+                <button onclick="setPeriod('Q3')" class="per-btn w-7 h-7 rounded border text-[10px] font-bold bg-white">3</button>
+                <button onclick="setPeriod('Q4')" class="per-btn w-7 h-7 rounded border text-[10px] font-bold bg-white">4</button>
+                <button onclick="setPeriod('OT')" class="per-btn w-7 h-7 rounded border text-[10px] font-bold bg-white text-red-600">OT</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="premium-card overflow-hidden">
+        <div class="bg-slate-50 border-b px-6 py-4 flex justify-between items-center no-print">
+            <h2 id="current-team-label" onclick="changeTeamNamePrompt(currentTeam)" class="text-xs font-black text-slate-700 uppercase tracking-widest cursor-pointer hover:text-emerald-600 transition-colors">TEAM VIEW <i class="fa-solid fa-pen ml-2 opacity-30 text-[9px]"></i></h2>
+            <div class="flex gap-2">
+                <button onclick="openModal()" class="bg-slate-800 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase">+ Manage Roster</button>
+                <button onclick="handlePrint()" class="bg-emerald-600 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase shadow-md hover:bg-emerald-700"><i class="fa-solid fa-file-pdf mr-1"></i> Simpan PDF</button>
+                <button onclick="resetAllData()" class="bg-white border border-red-200 text-red-500 text-[9px] font-bold px-3 py-2 rounded-lg uppercase">Reset</button>
+            </div>
+        </div>
+        
+        <div class="hidden print:block p-2 bg-slate-100 text-slate-700 text-[10px] font-black uppercase text-center border-b" id="print-team-focus"></div>
+
+        <table class="w-full data-table text-left">
+            <thead>
+                <tr>
+                    <th width="110">Athlete</th>
+                    <th class="text-center" width="30">EFF</th>
+                    <th class="text-center" width="40">Min</th>
+                    <th class="text-center" width="65">2PT (M/A)</th>
+                    <th class="text-center text-emerald-600" width="65">3PT (M/A)</th>
+                    <th class="text-center text-amber-600" width="65">FT (M/A)</th>
+                    <th class="text-center" width="55">ORB/DRB</th>
+                    <th class="text-center font-bold" width="35">TRB</th>
+                    <th class="text-center" width="30">AST</th>
+                    <th class="text-center" width="30">STL</th>
+                    <th class="text-center text-emerald-600 font-bold" width="30">BLK</th>
+                    <th class="text-center" width="45">TO/PF</th>
+                    <th class="text-center no-print" width="60">Action</th>
+                </tr>
+            </thead>
+            <tbody id="player-rows" class="bg-white"></tbody>
+        </table>
+        <div id="empty-state" class="p-12 text-center text-slate-300 text-[10px] font-bold italic uppercase tracking-[0.2em]">No players registered</div>
+    </div>
+
+    <div class="hidden print-footer">
+        <h4 class="text-[10px] font-black uppercase mb-2 border-b">Legend / Keterangan:</h4>
+        <div class="grid grid-cols-4 gap-2 text-[8px] text-slate-500 font-bold uppercase tracking-tight">
+            <div>EFF: Efficiency Value</div>
+            <div>2PT: 2 Points Field Goal</div>
+            <div>3PT: 3 Points Field Goal</div>
+            <div>FT: Free Throw</div>
+            <div>M/A: Made / Attempt</div>
+            <div>ORB: Offensive Rebound</div>
+            <div>DRB: Defensive Rebound</div>
+            <div>TRB: Total Rebound</div>
+            <div>AST: Assist</div>
+            <div>STL: Steal</div>
+            <div>BLK: Blocked Shot</div>
+            <div>TO: Turnover</div>
+            <div>PF: Personal Foul</div>
+            <div>MIN: Minutes Played</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+        <div class="premium-card p-4">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest border-b pb-2">Scoring Shortcuts</h4>
+            <div class="grid grid-cols-2 gap-y-2 text-[11px]">
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">Q/W</span> <span>2PT (M/A)</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">E/R</span> <span>3PT (M/A)</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">T/Y</span> <span>FT (M/A)</span></div>
+            </div>
+        </div>
+        <div class="premium-card p-4">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest border-b pb-2">Defensive Shortcuts</h4>
+            <div class="grid grid-cols-2 gap-y-2 text-[11px]">
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">Z/X</span> <span>ORB/DRB</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">A/S</span> <span>AST/TO</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">D/F</span> <span>BLK/PF</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">C</span> <span>STL</span></div>
+            </div>
+        </div>
+        <div class="premium-card p-4 bg-slate-900 text-white">
+            <h4 class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest border-b border-slate-700 pb-2">System Control</h4>
+            <div class="space-y-1 text-[11px]">
+                <div><span class="kbd-key text-slate-900">Space</span> Timer Start/Stop</div>
+                <div><span class="kbd-key text-slate-900">Tab</span> Switch Team View</div>
+                <div><span class="kbd-key text-slate-900">1-0</span> Select Athlete</div>
+                <div class="text-amber-400 font-bold pt-1">SHIFT + Key: Undo Last Action</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LOGIN LOGIC ---
+    const LOGIN_PASS = 'MaduraUnibaJaya'; // <--- GANTI PASSWORD DI SINI
+    
+    window.onload = function() {
+        if(sessionStorage.getItem('isLoggedIn') === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+    };
+
+    function handleLogin() {
+        const input = document.getElementById('pass-field').value;
+        const error = document.getElementById('error-msg');
+        if(input === LOGIN_PASS) {
+            sessionStorage.setItem('isLoggedIn', 'true');
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            error.classList.remove('hidden');
+            document.getElementById('pass-field').value = '';
+        }
+    }
+
+    document.getElementById('pass-field').addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') handleLogin();
+    });
+
+    // --- ORIGINAL STATS LOGIC ---
+    let teams = JSON.parse(localStorage.getItem('elite_teams')) || {
+        home: { name: 'HOME TEAM', players: [] },
+        away: { name: 'AWAY TEAM', players: [] }
+    };
+    let stats = JSON.parse(localStorage.getItem('elite_stats')) || {};
+    let currentTeam = 'home', selectedIdx = 0, timeLeft = 600, timerInterval = null, currentPeriod = 'Q1';
+
+    const calcPct = (m, a) => a > 0 ? Math.round((m / a) * 100) + '%' : '0%';
+
+    function handlePrint() {
+        document.getElementById('ph-name').innerText = teams.home.name;
+        document.getElementById('pa-name').innerText = teams.away.name;
+        document.getElementById('p-score-total').innerText = `${document.getElementById('score-home').innerText} - ${document.getElementById('score-away').innerText}`;
+        document.getElementById('print-date').innerText = new Date().toLocaleString('id-ID', { dateStyle: 'full' });
+        document.getElementById('print-period-info').innerText = `Period: ${currentPeriod} | Clock: ${document.getElementById('game-clock').innerText}`;
+        document.getElementById('print-team-focus').innerText = `TEAM STATISTICS: ${teams[currentTeam].name}`;
+        window.print();
+    }
+
+    function resetAllData() {
+        if(confirm("Apakah Anda yakin ingin menghapus SEMUA data pertandingan?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function playBuzzer() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start(); oscillator.stop(audioCtx.currentTime + 2.5);
+        } catch(e) {}
+    }
+
+    function saveData() {
+        localStorage.setItem('elite_teams', JSON.stringify(teams));
+        localStorage.setItem('elite_stats', JSON.stringify(stats));
+    }
+
+    function openModal() {
+        document.getElementById('roster-modal').style.display = 'flex';
+        document.getElementById('bulk-input').value = teams[currentTeam].players.map(p => `${p.no} ${p.name}`).join('\n');
+        document.getElementById('bulk-input').focus();
+    }
+    function closeModal() { document.getElementById('roster-modal').style.display = 'none'; }
+
+    function saveBulkRoster() {
+        const lines = document.getElementById('bulk-input').value.trim().split('\n');
+        const newPlayers = [];
+        lines.forEach((line, i) => {
+            const firstSpace = line.trim().indexOf(' ');
+            if(firstSpace !== -1) {
+                const no = line.trim().substring(0, firstSpace).trim();
+                const name = line.trim().substring(firstSpace).trim();
+                const id = currentTeam[0] + "_" + no + "_" + i;
+                newPlayers.push({ id, no, name, onCourt: false });
+                if(!stats[id]) stats[id] = { '2pt':{m:0,a:0}, '3pt':{m:0,a:0}, 'ft':{m:0,a:0}, orb:0, drb:0, ast:0, blk:0, stl:0, to:0, pf:0, score:0, secs:0 };
+            }
+        });
+        teams[currentTeam].players = newPlayers;
+        saveData(); render(); closeModal();
+    }
+
+    function toggleClock() {
+        const btn = document.getElementById('clock-btn');
+        if (timerInterval) { 
+            clearInterval(timerInterval); timerInterval = null; btn.innerText = "Start"; btn.classList.replace('bg-red-500','bg-emerald-600'); saveData(); 
+        } else {
+            if(timeLeft <= 0) return;
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    ['home','away'].forEach(tk => teams[tk].players.forEach(p => { if(p.onCourt) stats[p.id].secs++; }));
+                    document.getElementById('game-clock').innerText = Math.floor(timeLeft/60).toString().padStart(2,'0')+":"+(timeLeft%60).toString().padStart(2,'0');
+                    render();
+                    if(timeLeft % 10 === 0) saveData();
+                } else { 
+                    clearInterval(timerInterval); timerInterval = null; btn.innerText = "TIME OUT"; btn.classList.replace('bg-red-500', 'bg-slate-500');
+                    playBuzzer(); saveData(); 
+                }
+            }, 1000);
+            btn.innerText = "Stop"; btn.classList.replace('bg-emerald-600','bg-red-500');
+        }
+    }
+
+    function manualClockEdit() { 
+        const r = prompt("Set Time (MM:SS)", document.getElementById('game-clock').innerText); 
+        if(r && r.includes(':')){ 
+            const [m,s] = r.split(':'); timeLeft = (parseInt(m)*60)+parseInt(s); 
+            document.getElementById('game-clock').innerText = r; render();
+        } 
+    }
+
+    function setPeriod(p) {
+        currentPeriod = p; document.getElementById('period-display').innerText = p;
+        document.querySelectorAll('.per-btn').forEach(b => { 
+            b.className = (b.innerText === p || (p==='OT' && b.innerText==='OT')) ? 'per-btn w-7 h-7 rounded border text-[10px] font-bold bg-slate-900 text-white' : 'per-btn w-7 h-7 rounded border text-[10px] font-bold bg-white'; 
+        });
+        timeLeft = (p === 'OT') ? 300 : 600;
+        document.getElementById('game-clock').innerText = Math.floor(timeLeft/60).toString().padStart(2,'0') + ":00";
+    }
+
+    function changeTeamNamePrompt(t) {
+        const newName = prompt(`Rename Team ${t.toUpperCase()}:`, teams[t].name);
+        if(newName) { teams[t].name = newName.trim().toUpperCase(); saveData(); render(); }
+    }
+
+    function render() {
+        const tbody = document.getElementById('player-rows');
+        const sorted = [...teams[currentTeam].players].sort((a,b) => b.onCourt - a.onCourt);
+        tbody.innerHTML = '';
+        
+        document.getElementById('current-team-label').innerHTML = `${teams[currentTeam].name} <i class="fa-solid fa-pen ml-2 opacity-30"></i>`;
+        document.getElementById('btn-home').innerText = teams.home.name;
+        document.getElementById('btn-away').innerText = teams.away.name;
+        document.getElementById('btn-home').className = currentTeam === 'home' ? 'w-full truncate px-3 py-1.5 rounded-full bg-emerald-900 text-white font-black text-[10px] mb-1' : 'w-full truncate px-3 py-1.5 rounded-full bg-white border text-slate-400 font-black text-[10px] mb-1';
+        document.getElementById('btn-away').className = currentTeam === 'away' ? 'w-full truncate px-3 py-1.5 rounded-full bg-emerald-900 text-white font-black text-[10px] mb-1' : 'w-full truncate px-3 py-1.5 rounded-full bg-white border text-slate-400 font-black text-[10px] mb-1';
+        document.getElementById('empty-state').style.display = sorted.length === 0 ? 'block' : 'none';
+
+        sorted.forEach((p, idx) => {
+            const s = stats[p.id];
+            const eff = (s.score + (s.orb + s.drb) + s.ast + s.stl + s.blk) - ((s['2pt'].a - s['2pt'].m) + (s['3pt'].a - s['3pt'].m) + (s['ft'].a - s['ft'].m) + s.to);
+            const tr = document.createElement('tr');
+            tr.className = `${p.onCourt ? '' : 'on-bench'} ${idx === selectedIdx ? 'player-row-active' : ''}`;
+            tr.innerHTML = `
+                <td><div class="font-bold truncate">#${p.no} ${p.name.toUpperCase()}</div></td>
+                <td class="text-center"><span class="rating-pill ${eff >= 12 ? 'bg-emerald-900 text-yellow-400' : 'bg-emerald-50 text-emerald-600'}">${eff}</span></td>
+                <td class="text-center font-mono">${Math.floor(s.secs/60)}:${(s.secs%60).toString().padStart(2,'0')}</td>
+                <td class="text-center font-bold">${s['2pt'].m}/${s['2pt'].a}<br><span class="text-[9px] text-slate-400 font-medium">${calcPct(s['2pt'].m, s['2pt'].a)}</span></td>
+                <td class="text-center font-bold text-emerald-600">${s['3pt'].m}/${s['3pt'].a}<br><span class="text-[9px] text-emerald-400 font-medium">${calcPct(s['3pt'].m, s['3pt'].a)}</span></td>
+                <td class="text-center font-bold text-amber-600">${s['ft'].m}/${s['ft'].a}<br><span class="text-[9px] text-amber-400 font-medium">${calcPct(s['ft'].m, s['ft'].a)}</span></td>
+                <td class="text-center text-slate-400 text-[10px]">${s.orb}/${s.drb}</td>
+                <td class="text-center font-black text-blue-600">${s.orb+s.drb}</td>
+                <td class="text-center font-bold text-emerald-600">${s.ast}</td>
+                <td class="text-center font-bold text-indigo-500">${s.stl}</td>
+                <td class="text-center font-black text-emerald-600">${s.blk}</td>
+                <td class="text-center font-bold">${s.to}/${s.pf}</td>
+                <td class="text-center no-print"><button onclick="sub('${p.id}')" class="text-[9px] font-black border rounded px-2 py-1 uppercase">${p.onCourt ? 'Bench' : 'Play'}</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateScore();
+    }
+
+    function addStat(type, made = true, undo = false) {
+        const sorted = [...teams[currentTeam].players].sort((a,b) => b.onCourt - a.onCourt);
+        const p = sorted[selectedIdx];
+        if(!p || (!p.onCourt && !undo)) { showToast("Bench Player Selected!"); return; }
+        const s = stats[p.id], v = undo ? -1 : 1;
+        if(['2pt','3pt','ft'].includes(type)) { 
+            if(undo) { if(s[type].a>0){s[type].a--; if(made && s[type].m>0){s[type].m--; s.score-=(type==='3pt'?3:type==='2pt'?2:1);}} } 
+            else { s[type].a++; if(made){s[type].m++; s.score+=(type==='3pt'?3:type==='2pt'?2:1);} } 
+        } else if(type==='pf') s.pf = Math.max(0, s.pf+v); else s[type] = Math.max(0, s[type]+v);
+        render(); showToast(`${undo?'UNDO':'ADD'} ${type.toUpperCase()}`); saveData();
+    }
+
+    function updateScore() {
+        let h=0, a=0; Object.keys(stats).forEach(id => { if(id.startsWith('h')) h+=stats[id].score; else if(id.startsWith('a')) a+=stats[id].score; });
+        document.getElementById('score-home').innerText = h; document.getElementById('score-away').innerText = a;
+    }
+
+    function sub(id) { const p = [...teams.home.players, ...teams.away.players].find(x=>x.id===id); p.onCourt = !p.onCourt; render(); saveData(); }
+    function showToast(m) { const t = document.getElementById("toast"); t.innerText = m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 1000); }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; 
+        if(e.key === ' ') { e.preventDefault(); toggleClock(); }
+        if(e.key === 'Tab') { e.preventDefault(); currentTeam = (currentTeam==='home'?'away':'home'); render(); }
+        if(!isNaN(e.key) && e.key !== ' ') { e.preventDefault(); let i = parseInt(e.key)-1; if(e.key==='0') i=9; selectedIdx = i; render(); }
+        const map = {q:['2pt',true], w:['2pt',false], e:['3pt',true], r:['3pt',false], t:['ft',true], y:['ft',false], z:['orb'], x:['drb'], a:['ast'], s:['to'], d:['blk'], f:['pf'], c:['stl']};
+        if(map[e.key.toLowerCase()]) { e.preventDefault(); addStat(map[e.key.toLowerCase()][0], map[e.key.toLowerCase()][1]??true, e.shiftKey); }
+    });
+
+    render();
+</script>
+</body>
+</html>
