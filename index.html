@@ -14,20 +14,15 @@
         .data-table thead th { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #64748b; padding: 10px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
         .data-table tbody td { padding: 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; }
         .player-row-active { background-color: #f0fdf4 !important; border-left: 4px solid var(--brand-accent); }
-        
         .on-bench { opacity: 1 !important; background-color: #ffffff; } 
-        
         .rating-pill { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
         .kbd-key { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; box-shadow: 0 1px 0 #cbd5e1; }
         #toast { visibility: hidden; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 50px; font-size: 11px; font-weight: 700; z-index: 1000; }
         #toast.show { visibility: visible; animation: fadeInUp 0.3s; }
         #roster-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        
-        /* Bulatan Foul Styles */
         .foul-dot { width: 7px; height: 7px; border-radius: 50%; border: 1px solid #cbd5e1; display: inline-block; margin-right: 2px; transition: all 0.2s; }
         .foul-dot.active { background-color: #ef4444; border-color: #ef4444; box-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
         .foul-dot.fouled-out { background-color: #000; border-color: #000; }
-
         #login-overlay { position: fixed; inset: 0; background: #064e3b; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 2rem; border-radius: 1.5rem; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
@@ -52,7 +47,7 @@
 
 <div id="login-overlay" class="no-print">
     <div class="login-box">
-        <img src="image/71.png" class="w-16 h-16 mx-auto mb-4 object-contain">
+        <img src="image/71.png" class="w-16 h-16 mx-auto mb-4 object-contain" alt="Logo">
         <h2 class="text-lg font-black uppercase tracking-tighter">Uniba Basketball</h2>
         <p class="text-[9px] font-bold text-slate-400 uppercase mb-6 italic">Secure Access Only</p>
         <input type="password" id="pass-field" class="w-full border-2 border-slate-100 rounded-xl px-4 py-3 mb-3 focus:border-emerald-500 outline-none text-center font-bold text-sm" placeholder="Password">
@@ -153,9 +148,9 @@
         <table class="w-full data-table text-left">
             <thead>
                 <tr>
-                    <th width="130">Athlete</th>
-                    <th class="text-center" width="30">EFF</th>
-                    <th class="text-center" width="40">Min</th>
+                    <th width="35">#</th> <th width="120">Athlete</th>
+                    <th class="text-center" width="40">EFF</th>
+                    <th class="text-center" width="45">Min</th>
                     <th class="text-center" width="65">2PT (M/A)</th>
                     <th class="text-center text-emerald-600" width="65">3PT (M/A)</th>
                     <th class="text-center text-amber-600" width="65">FT (M/A)</th>
@@ -205,9 +200,9 @@
         <div class="premium-card p-4">
             <h4 class="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest border-b pb-2">Defensive Shortcuts</h4>
             <div class="grid grid-cols-2 gap-y-2 text-[11px]">
-                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">Z/X</span> <span>Offensive/Deffensive Rebound</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">Z/X</span> <span>Off/Def Rebound</span></div>
                 <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">A/S</span> <span>Assist/Turnover</span></div>
-                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">D/F</span> <span>Block/Personal Fouls</span></div>
+                <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">D/F</span> <span>Block/Personal Foul</span></div>
                 <div class="flex items-center gap-2"><span class="kbd-key w-6 text-center">C</span> <span>Steal</span></div>
             </div>
         </div>
@@ -224,7 +219,6 @@
 </div>
 
 <script>
-    // --- LOGIN LOGIC ---
     const LOGIN_PASS = 'basketuniba'; 
     
     window.onload = function() {
@@ -245,11 +239,8 @@
         }
     }
 
-    document.getElementById('pass-field').addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') handleLogin();
-    });
+    document.getElementById('pass-field').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleLogin(); });
 
-    // --- ORIGINAL STATS LOGIC ---
     let teams = JSON.parse(localStorage.getItem('elite_teams')) || {
         home: { name: 'HOME TEAM', players: [] },
         away: { name: 'AWAY TEAM', players: [] }
@@ -274,21 +265,6 @@
             localStorage.clear();
             location.reload();
         }
-    }
-
-    function playBuzzer() {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.type = 'sawtooth';
-            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.start(); oscillator.stop(audioCtx.currentTime + 2.5);
-        } catch(e) {}
     }
 
     function saveData() {
@@ -335,7 +311,7 @@
                     if(timeLeft % 10 === 0) saveData();
                 } else { 
                     clearInterval(timerInterval); timerInterval = null; btn.innerText = "TIME OUT"; btn.classList.replace('bg-red-500', 'bg-slate-500');
-                    playBuzzer(); saveData(); 
+                    saveData(); 
                 }
             }, 1000);
             btn.innerText = "Stop"; btn.classList.replace('bg-emerald-600','bg-red-500');
@@ -380,7 +356,6 @@
             const s = stats[p.id];
             const eff = (s.score + (s.orb + s.drb) + s.ast + s.stl + s.blk) - ((s['2pt'].a - s['2pt'].m) + (s['3pt'].a - s['3pt'].m) + (s['ft'].a - s['ft'].m) + s.to);
             
-            // Logika bulatan foul
             let foulDotsHtml = '';
             for(let i=1; i<=5; i++) {
                 let statusClass = s.pf >= i ? (s.pf >= 5 ? 'active fouled-out' : 'active') : '';
@@ -390,7 +365,7 @@
             const tr = document.createElement('tr');
             tr.className = `${p.onCourt ? '' : 'on-bench'} ${idx === selectedIdx ? 'player-row-active' : ''}`;
             tr.innerHTML = `
-                <td>
+                <td class="font-bold text-slate-400 text-center">${idx + 1}</td> <td>
                     <div class="font-bold truncate">#${p.no} ${p.name.toUpperCase()}</div>
                     <div class="mt-1 flex items-center">${foulDotsHtml}</div>
                 </td>
