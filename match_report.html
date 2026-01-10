@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistics Report - Uniba Basketball</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap');
+        
+        :root { --p-dark: #0f172a; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 0.4cm; }
+            body { background: white; padding: 0; -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .report-card { border: none !important; box-shadow: none !important; width: 100% !important; margin: 0 !important; padding: 10px !important; }
+        }
+
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: var(--p-dark); font-size: 10px; }
+        .report-card { background: white; width: 210mm; margin: 0 auto; min-height: 290mm; padding: 12px 18px; }
+        
+        .table-official { width: 100%; border-collapse: collapse; table-layout: auto; }
+        .table-official thead th { 
+            background: #1e293b !important; color: white !important;
+            font-size: 6.5px; font-weight: 700; text-transform: uppercase;
+            padding: 3px 1px; border: 1px solid #334155;
+        }
+        
+        .table-official tbody td { 
+            padding: 2px 1px; font-size: 8.5px; border: 1px solid #e2e8f0; 
+            text-align: center; font-weight: 500; line-height: 1.1;
+        }
+
+        .col-name { text-align: left !important; padding-left: 6px !important; font-weight: 700 !important; font-size: 8.5px !important; }
+
+        .table-official tfoot td { 
+            background: #f8fafc; font-weight: 800; font-size: 8px; padding: 3px 1px; border: 1px solid #cbd5e1;
+        }
+        
+        .team-header-bar {
+            background: linear-gradient(to right, #0f172a, #1e293b); color: white;
+            padding: 4px 10px; font-weight: 800; font-size: 9px;
+            display: flex; justify-content: space-between; align-items: center; border-radius: 4px 4px 0 0;
+        }
+        
+        .stat-badge { color: #64748b; font-size: 6px; font-weight: 600; display: block; line-height: 1; margin-top: 1px; }
+        .font-mono-stat { font-family: 'JetBrains Mono', monospace; font-size: 7.5px; }
+        
+        .legend-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
+        .legend-item { font-size: 6.5px; color: #64748b; line-height: 1.1; }
+        .legend-item b { color: #0f172a; }
+
+        #stats-container > div { margin-bottom: 12px; }
+    </style>
+</head>
+<body class="p-0 sm:py-2">
+
+    <div class="no-print max-w-[210mm] mx-auto mb-2 flex justify-between items-center px-4">
+        <button onclick="window.history.back()" class="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold text-xs uppercase">
+            <a href="index.html">Kembali</a>
+        </button>
+        <button onclick="window.print()" class="bg-emerald-700 text-white px-5 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-800 shadow-md flex items-center gap-2 transition-all">
+            <i class="fa-solid fa-print"></i> Cetak Report
+        </button>
+    </div>
+
+    <div class="report-card shadow-2xl border border-slate-200">
+        <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <div class="flex items-center gap-3">
+                <img src="image/71.png" class="w-10 h-10 object-contain" onerror="this.style.display='none'">
+                <div>
+                    <h1 class="text-lg font-black text-slate-900 leading-none uppercase tracking-tighter">Uniba Basketball</h1>
+                    <p class="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Statistics Report System</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-right border-r pr-4">
+                    <p id="match-date" class="text-[8px] font-bold text-slate-500 uppercase"></p>
+                    <p class="text-[8px] font-black text-emerald-700 italic">by Uniba Basketball IT Team</p>
+                </div>
+                <div class="text-center">
+                    <div id="info-period" class="bg-slate-900 text-white px-2 py-0.5 rounded text-[8px] font-black italic mb-0.5">PERIOD: -</div>
+                    <p id="info-time" class="text-xs font-mono font-bold text-slate-800">--:--</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-7 items-center mb-4 bg-slate-900 text-white border rounded-xl p-3 shadow-lg">
+            <div class="col-span-2 text-right">
+                <h3 id="home-name-display" class="text-xs font-black uppercase tracking-tight truncate">HOME</h3>
+                <p class="text-[6px] text-slate-400 font-bold uppercase">Home Team</p>
+            </div>
+            <div class="col-span-1 text-center">
+                <p id="home-score-total" class="text-3xl font-black">0</p>
+            </div>
+            <div class="col-span-1 text-center font-black text-slate-600 text-[10px] italic">VS</div>
+            <div class="col-span-1 text-center">
+                <p id="away-score-total" class="text-3xl font-black">0</p>
+            </div>
+            <div class="col-span-2 text-left">
+                <h3 id="away-name-display" class="text-xs font-black uppercase tracking-tight truncate">AWAY</h3>
+                <p class="text-[6px] text-slate-400 font-bold uppercase">Away Team</p>
+            </div>
+        </div>
+
+        <div id="stats-container" class="space-y-4"></div>
+
+        <div class="mt-4">
+            <h4 class="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Statistics Glossary</h4>
+            <div class="legend-grid">
+                <div class="legend-item"><b>EFF</b> Efficiency</div>
+                <div class="legend-item"><b>MIN</b> Minutes</div>
+                <div class="legend-item"><b>2PT</b> 2 Point FG</div>
+                <div class="legend-item"><b>3PT</b> 3 Point FG</div>
+                <div class="legend-item"><b>FT</b> Free Throw</div>
+                <div class="legend-item"><b>OR</b> Off. Rebound</div>
+                <div class="legend-item"><b>DR</b> Def. Rebound</div>
+                <div class="legend-item"><b>TR</b> Total Rebound</div>
+                <div class="legend-item"><b>AS</b> Assists</div>
+                <div class="legend-item"><b>ST</b> Steals</div>
+                <div class="legend-item"><b>BS</b> Blocked Shot</div>
+                <div class="legend-item"><b>TO</b> Turnover</div>
+                <div class="legend-item"><b>PF</b> Pers. Foul</div>
+                <div class="legend-item"><b>PTS</b> Total Points</div>
+            </div>
+        </div>
+
+        <div class="mt-4 text-center border-t pt-2">
+            <p class="text-[6px] text-slate-300 font-bold uppercase tracking-[0.5em]">Uniba Basketball Statistics Report System <br> @unibabasketball</p>
+        </div>
+    </div>
+
+    <script>
+        function generateReport() {
+            // Pengambilan data dari LocalStorage
+            const teams = JSON.parse(localStorage.getItem('elite_teams'));
+            const stats = JSON.parse(localStorage.getItem('elite_stats'));
+            // PERBAIKAN: Mengambil info period/time yang disimpan Index
+            const gameInfo = JSON.parse(localStorage.getItem('elite_game_info')) || { period: 'Q1', time: '10:00' };
+
+            if (!teams || !stats) {
+                alert("Data pertandingan tidak ditemukan!");
+                return;
+            }
+
+            document.getElementById('match-date').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            // Sinkronisasi info period dan waktu
+            document.getElementById('info-period').innerText = `PERIOD: ${gameInfo.period}`;
+            document.getElementById('info-time').innerText = gameInfo.time;
+            
+            document.getElementById('home-name-display').innerText = teams.home.name;
+            document.getElementById('away-name-display').innerText = teams.away.name;
+
+            const calcPct = (m, a) => a === 0 ? '0%' : Math.round((m / a) * 100) + '%';
+            let mainHtml = '';
+            let teamScores = { home: 0, away: 0 };
+
+            ['home', 'away'].forEach(tk => {
+                const team = teams[tk];
+                let t = { pts:0, eff:0, m2:0, a2:0, m3:0, a3:0, mf:0, af:0, orb:0, drb:0, ast:0, stl:0, blk:0, to:0, pf:0 };
+                let rowsHtml = '';
+                
+                team.players.forEach(p => {
+                    const s = stats[p.id];
+                    const eff = (s.score + (s.orb + s.drb) + s.ast + s.stl + s.blk) - ((s['2pt'].a - s['2pt'].m) + (s['3pt'].a - s['3pt'].m) + (s['ft'].a - s['ft'].m) + s.to);
+                    
+                    t.pts += s.score; t.eff += eff; t.m2 += s['2pt'].m; t.a2 += s['2pt'].a;
+                    t.m3 += s['3pt'].m; t.a3 += s['3pt'].a; t.mf += s['ft'].m; t.af += s['ft'].a;
+                    t.orb += s.orb; t.drb += s.drb; t.ast += s.ast; t.stl += s.stl; 
+                    t.blk += s.blk; t.to += s.to; t.pf += s.pf;
+
+                    rowsHtml += `
+                        <tr>
+                            <td style="width: 25px">${p.no}</td>
+                            <td class="col-name">${p.name}</td>
+                            <td style="width: 30px; background: #f8fafc;">${eff}</td>
+                            <td style="width: 40px" class="font-mono-stat">${Math.floor(s.secs/60)}:${(s.secs%60).toString().padStart(2,'0')}</td>
+                            <td style="width: 50px">${s['2pt'].m}/${s['2pt'].a}<span class="stat-badge">${calcPct(s['2pt'].m, s['2pt'].a)}</span></td>
+                            <td style="width: 50px">${s['3pt'].m}/${s['3pt'].a}<span class="stat-badge">${calcPct(s['3pt'].m, s['3pt'].a)}</span></td>
+                            <td style="width: 50px">${s['ft'].m}/${s['ft'].a}<span class="stat-badge">${calcPct(s['ft'].m, s['ft'].a)}</span></td>
+                            <td>${s.orb}</td><td>${s.drb}</td>
+                            <td style="font-weight: 700;">${s.orb + s.drb}</td>
+                            <td style="font-weight: 700;">${s.ast}</td>
+                            <td>${s.stl}</td><td>${s.blk}</td>
+                            <td>${s.to}</td><td>${s.pf}</td>
+                            <td style="width: 35px; background: #f1f5f9; font-weight: 800; font-size: 10px;">${s.score}</td>
+                        </tr>`;
+                });
+
+                mainHtml += `
+                    <div>
+                        <div class="team-header-bar">
+                            <span>TIM: ${team.name}</span>
+                            <span>TOTAL POIN: ${t.pts}</span>
+                        </div>
+                        <table class="table-official">
+                            <thead>
+                                <tr>
+                                    <th>#</th><th class="text-left !pl-2" style="min-width: 130px">PLAYER NAME</th>
+                                    <th>EFF</th><th>MIN</th><th>2PT</th><th>3PT</th><th>FT</th>
+                                    <th>OR</th><th>DR</th><th>TR</th><th>AS</th><th>ST</th><th>BS</th><th>TO</th><th>PF</th>
+                                    <th style="background: #0f172a !important">PTS</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rowsHtml}</tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" class="text-right pr-4 uppercase text-[7px] font-black text-slate-500">Team Totals</td>
+                                    <td>${t.eff}</td><td>-</td>
+                                    <td>${t.m2}/${t.a2}<span class="stat-badge">${calcPct(t.m2, t.a2)}</span></td>
+                                    <td>${t.m3}/${t.a3}<span class="stat-badge">${calcPct(t.m3, t.a3)}</span></td>
+                                    <td>${t.mf}/${t.af}<span class="stat-badge">${calcPct(t.mf, t.af)}</span></td>
+                                    <td>${t.orb}</td><td>${t.drb}</td><td>${t.orb+t.drb}</td>
+                                    <td>${t.ast}</td><td>${t.stl}</td><td>${t.blk}</td><td>${t.to}</td><td>${t.pf}</td>
+                                    <td style="background: #e2e8f0; color: #000; font-size: 10px;">${t.pts}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>`;
+                teamScores[tk] = t.pts;
+            });
+
+            document.getElementById('stats-container').innerHTML = mainHtml;
+            document.getElementById('home-score-total').innerText = teamScores.home;
+            document.getElementById('away-score-total').innerText = teamScores.away;
+        }
+        window.onload = generateReport;
+    </script>
+</body>
+</html>
